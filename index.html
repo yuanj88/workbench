@@ -26,7 +26,43 @@
       --radius:16px;
       --safe-bottom:env(safe-area-inset-bottom,0px);
     }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+    /* ===== 深色模式（通过 html.dark 类切换，或由系统深色偏好自动开启） ===== */
+    html.dark{
+      --bg:#1c1c1e; --card:#2c2c2e; --text:#f5f5f7; --text2:#a0a0a5;
+      --green:#6fae5e; --green2:#8cc47c; --greenLight:#243521; --border:#3a3a3c;
+      --shadow:0 2px 10px rgba(0,0,0,.4);
+    }
+    html.dark header{background:rgba(44,44,46,.92)}
+    html.dark #drawer .panel{background:#2c2c2e}
+    html.dark .drawer-head{background:linear-gradient(135deg,#243521 0%,#2c2c2e 100%)}
+    html.dark .nav-item:active:not(.active){background:#3a3a3c}
+    html.dark .drawer-tools .tool-btn{background:#33372f;color:var(--green2)}
+    html.dark .drawer-tools .tool-btn:active{background:var(--greenLight)}
+    html.dark .btn-secondary{background:#3a3a3c}
+    html.dark .input-row input,
+    html.dark .modal input,
+    html.dark .modal textarea{background:#3a3a3c;color:var(--text)}
+    html.dark .modal .sheet{background:#2c2c2e}
+    html.dark .media-empty{background:#3a3a3c}
+    html.dark .ctrl-btns button{background:#3a3a3c}
+    html.dark .date-nav button{background:#3a3a3c}
+    html.dark .idea-tab{background:#2c2c2e}
+    html.dark .tag-chip{background:#33372f;color:var(--green2)}
+    html.dark .idea-btn{background:#33372f;color:var(--green2)}
+    html.dark .idea-btn.danger{color:#e08a82;border-color:#5a3a38;background:#3a2928}
+    html.dark .cal-cell{background:#2c2c2e}
+    html.dark .sent-row.active{background:#243521}
+    html.dark .life-card.overdue{background:#3a2e1f;border-color:#7a5a2a}
+    html.dark .expiry-card.urgent{background:#3a2222;border-color:#7a3a3a}
+    html.dark .expiry-card.soon{background:#33291c;border-color:#7a5a2a}
+    html.dark .expiry-card.normal{background:var(--card)}
+    html.dark select{background:#3a3a3c;color:var(--text)}
+    html.dark .cal-cell.other{color:#6a6a6e}
+    html.dark .fab{box-shadow:0 4px 14px rgba(0,0,0,.5)}
+    html.dark .modal input::placeholder,
+    html.dark .modal textarea::placeholder,
+    html.dark .input-row input::placeholder{color:#8a8a8e}
     html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);overscroll-behavior-y:none}
     button,input,textarea{font-family:inherit}
     .hide{display:none!important}
@@ -58,6 +94,9 @@
     .drawer-tools{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
     .drawer-tools .tool-btn{flex:1;border:1px solid var(--border);background:#f6faf4;color:var(--green2);border-radius:10px;padding:10px 0;font-size:13px;font-weight:600}
     .drawer-tools .tool-btn:active{background:var(--greenLight)}
+    .theme-toggle{display:block;width:calc(100% - 28px);margin:0 14px 14px;border:1px solid var(--border);background:#f6faf4;color:var(--green2);border-radius:10px;padding:11px 0;font-size:13px;font-weight:600}
+    .theme-toggle:active{background:var(--greenLight)}
+    html.dark .theme-toggle{background:#33372f;color:var(--green2)}
 
     /* main */
     main{padding:66px 14px calc(16px + var(--safe-bottom));min-height:100%}
@@ -239,6 +278,7 @@
         <button class="tool-btn" id="btnExport">⬇ 导出备份</button>
         <button class="tool-btn" id="btnImport">⬆ 导入备份</button>
       </div>
+      <button class="theme-toggle" id="btnTheme">🌓 跟随系统（点切换深色）</button>
       <input type="file" id="importFile" accept="application/json,.json" class="hide" />
       <div class="drawer-foot">单文件 · 数据存于浏览器本地</div>
     </div>
@@ -276,7 +316,7 @@
           <span class="cur" id="nce3DateLabel">--</span>
           <button id="nce3Next">›</button>
         </div>
-        <div id="nce3ScheduleBar" style="display:none;background:#EAF3DE;border-radius:12px;padding:10px 12px;margin-top:10px"></div>
+        <div id="nce3ScheduleBar" style="display:none;background:var(--greenLight);border-radius:12px;padding:10px 12px;margin-top:10px"></div>
         <button id="nce3Bring" class="btn-primary" style="width:100%;margin:10px 0 2px;display:none">带入今日建议</button>
         <div class="sub-hd">学习内容 <span class="pill-done" id="nce3StudyDone">0/0</span></div>
         <div id="nce3StudyList"></div>
@@ -687,7 +727,7 @@
       const bar=document.getElementById('nce3ScheduleBar'),btn=document.getElementById('nce3Bring');
       if(info){
         bar.style.display='block';
-        bar.innerHTML=`<div style="font-size:13px;font-weight:500;color:#3B6D11">第 ${info.weekNo}/30 周 · 本周应学 第 ${info.l1}–${info.l2} 课</div><div style="font-size:11px;color:#639922;margin-top:2px">阶段 ${info.stage}（课文 ${info.stage*20-19}–${info.stage*20}）· 距阶段总复习 ${info.weeksToReview} 周</div>`;
+        bar.innerHTML=`<div style="font-size:13px;font-weight:500;color:var(--green2)">第 ${info.weekNo}/30 周 · 本周应学 第 ${info.l1}–${info.l2} 课</div><div style="font-size:11px;color:var(--text2);margin-top:2px">阶段 ${info.stage}（课文 ${info.stage*20-19}–${info.stage*20}）· 距阶段总复习 ${info.weeksToReview} 周</div>`;
         btn.textContent='带入今日建议';btn.style.display='block';
       }else{bar.style.display='none';btn.style.display='none';}
       ensureNce3Day(nce3ViewKey);
@@ -919,6 +959,31 @@
     (function setTopDate(){
       const d=new Date();
       document.getElementById('topDate').innerHTML=`<div>${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</div><div>星期${WEEK[d.getDay()]}</div>`;
+    })();
+
+    /* 深色模式：手动切换 + 跟随系统 */
+    (function(){
+      const KEY='creativeWB_theme', ORDER=['system','dark','light'];
+      const btn=document.getElementById('btnTheme');
+      function applyTheme(pref){
+        const dark = pref==='dark' || (pref==='system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', !!dark);
+        if(btn)btn.textContent = pref==='dark' ? '☀️ 当前：深色（点切换浅色）'
+                               : pref==='light' ? '🌙 当前：浅色（点切换深色）'
+                               : '🌓 跟随系统（点切换深色）';
+      }
+      let pref=localStorage.getItem(KEY)||'system';
+      applyTheme(pref);
+      if(btn)btn.onclick=()=>{
+        pref=ORDER[(ORDER.indexOf(pref)+1)%ORDER.length];
+        localStorage.setItem(KEY,pref);
+        applyTheme(pref);
+      };
+      if(window.matchMedia){
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+          if((localStorage.getItem(KEY)||'system')==='system')applyTheme('system');
+        });
+      }
     })();
 
     if(!S.nce3Days)S.nce3Days={};
