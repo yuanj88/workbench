@@ -52,6 +52,7 @@
     html.dark .idea-btn{background:#33372f;color:var(--green2)}
     html.dark .idea-btn.danger{color:#e08a82;border-color:#5a3a38;background:#3a2928}
     html.dark .cal-cell{background:#2c2c2e}
+    html.dark .cal-cell.sel{background:var(--green);color:#fff}
     html.dark .sent-row.active{background:#243521}
     html.dark .life-card.overdue{background:#3a2e1f;border-color:#7a5a2a}
     html.dark .expiry-card.urgent{background:#3a2222;border-color:#7a3a3a}
@@ -214,10 +215,12 @@
     .cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
     .cal-week span{font-size:11px;color:var(--text2);text-align:center;padding:4px 0}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-    .cal-cell{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;background:#fff;position:relative;border:1px solid transparent}
+    .cal-cell{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;background:#fff;position:relative;border:1px solid transparent;transition:transform .12s ease,background .12s ease,box-shadow .12s ease;cursor:pointer}
     .cal-cell.other{color:#cfcfd4}
     .cal-cell.today{border-color:var(--green);font-weight:700}
-    .cal-cell.sel{background:var(--green);color:#fff}
+    .cal-cell.sel{background:var(--green);color:#fff;font-weight:700;transform:scale(1.06);box-shadow:0 4px 12px rgba(90,143,76,.45);z-index:2}
+    .cal-cell:active{transform:scale(.92)}
+    .day-detail-hd{font-size:14px;font-weight:700;color:var(--green2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
     .cal-dot{position:absolute;bottom:6px;width:5px;height:5px;border-radius:50%}
     .cal-dot.done{background:#3a9b3a}
     .cal-dot.plan{background:#e8a33a}
@@ -258,43 +261,43 @@
     .idea-tabs{display:flex;gap:8px;margin-bottom:10px}
     .idea-tab{flex:1;padding:8px 0;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text2);font-size:13px}
     .idea-tab.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
-    .idea-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .idea-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
     .idea-btn{border:1px solid var(--border);background:#f6faf4;color:var(--green2);border-radius:8px;padding:4px 12px;font-size:12px}
     .idea-btn.danger{color:#c0392b;border-color:#e4b6b0;background:#fdf3f2}
     .idea-btn.danger.solid{background:#c0392b;color:#fff;border-color:#c0392b}
+    .idea-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px}
+    .idea-footer{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+    .idea-body{font-size:14px;color:var(--text);line-height:1.65;word-break:break-word}
     .cat-chip{border:1px solid var(--border);background:#f6faf4;color:var(--text2);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600}
     .cat-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
     #ideaInput{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;min-height:60px;resize:none;background:var(--card);color:var(--text);box-sizing:border-box}
-    .idea-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
     .cat-pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
     .cat-insp{background:var(--green);color:#fff}
     .cat-memo{background:#fde8d8;color:#c46a16}
     .extra-tag{font-size:12px;font-weight:600;color:var(--green2);background:var(--greenLight);padding:3px 10px;border-radius:20px}
-    .idea-date{font-size:11px;color:var(--text2);margin-left:auto}
+    .idea-date{font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     html.dark .cat-chip{background:#33372f;color:var(--text2)}
     html.dark .cat-chip.active{background:var(--green);color:#fff}
     html.dark .cat-memo{background:#3a2e1f;color:#e0a06a}
     html.dark .extra-tag{background:#243521;color:var(--green2)}
-    /* 启动画面（2 秒后自动消失） */
-    #splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);transition:opacity .45s ease}
+    /* 启动画面（1 秒后自动消失） */
+    #splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);transition:opacity .35s ease}
     #splash.hide{opacity:0;pointer-events:none}
-    #splash .sp-logo{width:104px;height:104px;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(90,143,76,.35);animation:sp-pulse 1.6s ease-in-out infinite}
-    #splash .sp-logo img{width:100%;height:100%;display:block}
-    #splash .sp-name{font-size:19px;font-weight:600;color:var(--green);letter-spacing:1px}
-    #splash .sp-tip{font-size:13px;color:var(--text2)}
-    @keyframes sp-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+    #splash .sp-logo{width:96px;height:96px;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(90,143,76,.3)}
+    #splash .sp-logo img{width:100%;height:100%;display:block;object-fit:cover}
+    #splash .sp-name{font-size:18px;font-weight:600;color:var(--green);letter-spacing:1px}
   </style>
 </head>
 <body>
   <div id="splash">
     <div class="sp-logo"><img src="icon-512.png" alt=""></div>
-    <div class="sp-name">加载中…</div>
+    <div class="sp-name">微光</div>
   </div>
   <script>
     setTimeout(function(){
       var s=document.getElementById('splash');
-      if(s){s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},500);}
-    },2000);
+      if(s){s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},450);}
+    },1000);
   </script>
   <header>
     <div class="left"><button class="icon-btn" id="menuBtn">☰</button></div>
@@ -454,6 +457,7 @@
         plan:[{id:uid(),text:'淘宝采购',done:false,date:todayKey(),fixed:true}],
         ideas:[],
         nce3Days:{},
+        nce3SchemaVersion:2,
         life:[
           {id:uid(),title:'清洗洗衣机',period:'monthly',anchor:'last',lastDone:null},
           {id:uid(),title:'清洗油烟机',period:'monthly',anchor:'last',lastDone:null}
@@ -567,22 +571,35 @@
       document.getElementById('ideaTabActive').classList.toggle('active',ideaView==='active');
       document.getElementById('ideaTabArchived').classList.toggle('active',ideaView==='archived');
       document.getElementById('ideaInputCard').style.display=(ideaView==='active')?'block':'none';
-      const cardHtml=i=>{
+      const cardHtml=(i,actsHtml)=>{
         const extra=i.tag?`<span class="extra-tag">${esc(i.tag)}</span>`:'';
         const dateLine=i.date+(i.archivedAt?' · 归档于 '+i.archivedAt:'');
-        return `<div class="card idea-card"><div class="body">${esc(i.text)}</div><div class="idea-tags"><span class="cat-pill ${i.cat==='备忘'?'cat-memo':'cat-insp'}">${esc(i.cat||'灵感')}</span>${extra}<span class="idea-date">${dateLine}</span></div></div>`;
+        return `<div class="card idea-card">
+          <div class="idea-header">
+            <span class="idea-date">${dateLine}</span>
+            <div class="idea-actions">${actsHtml}</div>
+          </div>
+          <div class="idea-body">${esc(i.text)}</div>
+          <div class="idea-footer">
+            <span class="cat-pill ${i.cat==='备忘'?'cat-memo':'cat-insp'}">${esc(i.cat||'灵感')}</span>
+            ${extra}
+          </div>
+        </div>`;
       };
       if(ideaView==='active'){
         const list=S.ideas.filter(i=>!i.archived);
         if(!list.length){box.innerHTML='<div class="empty">暂无灵感与备忘，点击右下角 + 快速记录</div>';}
-        else{box.innerHTML=list.map(i=>cardHtml(i)+`<div class="idea-actions"><button class="idea-btn" data-act="edit" data-id="${i.id}">编辑</button><button class="idea-btn" data-act="archive" data-id="${i.id}">归档</button></div>`).join('');}
+        else{box.innerHTML=list.map(i=>{
+          const acts=`<button class="idea-btn" data-act="edit" data-id="${i.id}">编辑</button><button class="idea-btn" data-act="archive" data-id="${i.id}">归档</button>`;
+          return cardHtml(i,acts);
+        }).join('');}
       }else{
         const list=S.ideas.filter(i=>i.archived);
         if(!list.length){box.innerHTML='<div class="empty">暂无已归档的灵感&备忘</div>';}
         else{box.innerHTML=list.map(i=>{
           const isPending=i.id===pendingDeleteId;
           const acts=isPending?`<button class="idea-btn" data-act="cancel-del" data-id="${i.id}">取消</button><button class="idea-btn danger solid" data-act="confirm-del" data-id="${i.id}">确认删除</button>`:`<button class="idea-btn" data-act="restore" data-id="${i.id}">恢复</button><button class="idea-btn danger" data-act="del" data-id="${i.id}">删除</button>`;
-          return cardHtml(i)+`<div class="idea-actions">${acts}</div>`;
+          return cardHtml(i,acts);
         }).join('');}
       }
       const extraTags=[...new Set(S.ideas.filter(i=>i.tag).map(i=>i.tag).filter(Boolean))].sort();
@@ -740,15 +757,25 @@
       });
       return out;
     }
-    // 返回 k 这天按排期应复习的课文文本列表
+    // 返回 k 这天按艾宾浩斯遗忘曲线(11轮)应复习的课文文本列表
+    // 节奏：每课周一/周四开课、学 3 天 → 奇数课周三完成、偶数课周六完成；
+    //   完成后前9次 +1/+2/+4/+7/+15/+30/+60/+90/+120 天，其后每30天一次 → 第10次+150 / 第11次+180 天(共11轮)
     function nce3ReviewTexts(k){
       const START=new Date(2026,5,29);
-      const dd=Math.floor((parseKey(k)-START)/86400000);
-      if(dd<0)return [];
-      const w=Math.floor(dd/7);
-      if(w>=30)return [];
-      const l1=w*2+1,l2=w*2+2;
-      return [l1-2,l2-2].filter(n=>n>=1).map(n=>`复习 第${n}课 ${NCE3_TITLES[n]||''}`.trim());
+      const INTERVALS=[1,2,4,7,15,30,60,90,120,150,180];
+      const ORD=['一','二','三','四','五','六','七','八','九','十','十一'];
+      const out=[];
+      for(let n=1;n<=60;n++){
+        const w=Math.floor((n-1)/2);
+        const comp=addDays(START, w*7 + (n%2===1?2:5)); // 完成日：奇数课周三(+2)、偶数课周六(+5)
+        for(let i=0;i<INTERVALS.length;i++){
+          if(keyOf(addDays(comp,INTERVALS[i]))===k){
+            const title=NCE3_TITLES[n]||('第'+n+'课');
+            out.push(`复习 第${n}课 ${title}（第${ORD[i]}次·${INTERVALS[i]}天）`.trim());
+          }
+        }
+      }
+      return out;
     }
     // 同步当前日期的「自动新课」与「自动复习」，超出3天窗口的自动移除
     function syncNce3Auto(day,k,autoLessons,info){
@@ -1041,7 +1068,11 @@
           }
         });
       }
-      let html='<div class="day-detail">';
+      const dt=parseKey(k);
+      const wd=['日','一','二','三','四','五','六'][dt.getDay()];
+      const isToday=(k===todayKey());
+      const hd=`<div class="day-detail-hd">${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日 · 周${wd}${isToday?' · 今天':''}</div>`;
+      let html='<div class="day-detail">'+hd;
       if(planHtml)html+='<div class="day-group"><div class="gh">当天计划</div>'+planHtml+'</div>';
       if(doneHtml)html+='<div class="day-group"><div class="gh">已完成</div>'+doneHtml+'</div>';
       if(nce3Html)html+='<div class="day-group"><div class="gh">NCE3 学习安排</div>'+nce3Html+'</div>';
@@ -1138,6 +1169,12 @@
     })();
 
     if(!S.nce3Days)S.nce3Days={};
+    const NCE3_SCHEMA_VERSION=2;
+    if(S.nce3SchemaVersion!==NCE3_SCHEMA_VERSION){
+      S.nce3Days={};
+      S.nce3SchemaVersion=NCE3_SCHEMA_VERSION;
+      save();
+    }
     if(S.activeTab==='review'||S.activeTab==='english'||S.activeTab==='memo')S.activeTab='plan';
     if(!S.life)S.life=[
       {id:uid(),title:'清洗洗衣机',period:'monthly',anchor:'last',lastDone:null},
