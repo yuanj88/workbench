@@ -280,25 +280,9 @@
     html.dark .cat-chip.active{background:var(--green);color:#fff}
     html.dark .cat-memo{background:#3a2e1f;color:#e0a06a}
     html.dark .extra-tag{background:#243521;color:var(--green2)}
-    /* 启动画面（1 秒后自动消失） */
-    #splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);transition:opacity .35s ease}
-    #splash.hide{opacity:0;pointer-events:none}
-    #splash .sp-logo{width:96px;height:96px;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(90,143,76,.3)}
-    #splash .sp-logo img{width:100%;height:100%;display:block;object-fit:cover}
-    #splash .sp-name{font-size:18px;font-weight:600;color:var(--green);letter-spacing:1px}
   </style>
 </head>
 <body>
-  <div id="splash">
-    <div class="sp-logo"><img src="icon-512.png" alt=""></div>
-    <div class="sp-name">微光</div>
-  </div>
-  <script>
-    setTimeout(function(){
-      var s=document.getElementById('splash');
-      if(s){s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},450);}
-    },1000);
-  </script>
   <header>
     <div class="left"><button class="icon-btn" id="menuBtn">☰</button></div>
     <h1 id="pageTitle">每日计划</h1>
@@ -1049,25 +1033,21 @@
       S.plan.forEach(t=>{if(t.date===k&&!t.fixed&&t.done)doneHtml+=taskRowHtml(t);});
       S.plan.forEach(t=>{if(t.date===k&&!t.fixed&&!t.done)planHtml+=taskRowHtml(t);});
       let nce3Html='';
+      // 物化当天 NCE3 自动任务，使日历内可勾选并与 NCE3 页面对应
+      ensureNce3Day(k);
+      syncNce3Auto(S.nce3Days[k],k,nce3LessonsForWindow(k),nce3Info(k));
       const nd=S.nce3Days[k];
-      if(nd){
-        const list=nd.study.concat(nd.review).filter(t=>!t.missed);
-        if(list.length){list.forEach(t=>{nce3Html+=miniItem(t.text,t.done,false);});}
-      }else if(nce3LessonsForWindow(k).length||nce3ReviewTexts(k).length){
-        nce3LessonsForWindow(k).forEach(a=>{nce3Html+=miniItem(a.text,false,false);});
-        nce3ReviewTexts(k).forEach(r=>{nce3Html+=miniItem(r,false,false);});
-      }
-      const today=todayKey();
-      if(k>=today){
-        S.life.forEach(r=>{
-          const due=lifeDueDate(r,k);
-          if(due===k){
-            const {start,end}=periodRange(r,k);
-            const doneThisCycle=r.lastDone&&r.lastDone>=start&&r.lastDone<=end;
-            if(!doneThisCycle)futureLife+=miniItem('[提醒]'+r.title+'（到期日）',false,true);
-          }
-        });
-      }
+      if(nd.study.length){nd.study.filter(t=>!t.missed).forEach(t=>{nce3Html+=miniItem(t.text,t.done,false,'nce3','study',t.id);});}
+      if(nd.review.length){nd.review.filter(t=>!t.missed).forEach(t=>{nce3Html+=miniItem(t.text,t.done,false,'nce3','review',t.id);});}
+      // 生活提醒：到期日打点且日历内可勾选（含历史日期），与提醒页面对应
+      S.life.forEach(r=>{
+        const due=lifeDueDate(r,k);
+        if(due===k){
+          const {start,end}=periodRange(r,k);
+          const doneThisCycle=r.lastDone&&r.lastDone>=start&&r.lastDone<=end;
+          futureLife+=miniItem('[提醒]'+r.title+'（到期日）',doneThisCycle,true,'life',null,r.id);
+        }
+      });
       const dt=parseKey(k);
       const wd=['日','一','二','三','四','五','六'][dt.getDay()];
       const isToday=(k===todayKey());
@@ -1076,12 +1056,12 @@
       if(planHtml)html+='<div class="day-group"><div class="gh">当天计划</div>'+planHtml+'</div>';
       if(doneHtml)html+='<div class="day-group"><div class="gh">已完成</div>'+doneHtml+'</div>';
       if(nce3Html)html+='<div class="day-group"><div class="gh">NCE3 学习安排</div>'+nce3Html+'</div>';
-      if(futureLife)html+='<div class="day-group"><div class="gh">未来30天提醒到期</div>'+futureLife+'</div>';
+      if(futureLife)html+='<div class="day-group"><div class="gh">生活提醒到期日</div>'+futureLife+'</div>';
       html+='<div class="day-group"><div class="gh">添加这一天计划</div><div style="display:flex;gap:8px;margin-top:6px"><input id="calPlanInput" class="row-edit" style="flex:1" placeholder="输入计划..." /><button id="calPlanAdd" class="btn-primary sm">添加</button></div></div>';
       html+='</div>';
       calDetailEl.innerHTML=html;
     }
-    function miniItem(text,done,due){return '<div class="mini-item"><div class="ck '+(done?'done':'')+' '+(due&&!done?'due':'')+'">'+(done?'✓':'')+'</div><div class="t '+(done?'done':'')+'">'+esc(text)+'</div></div>';}
+    function miniItem(text,done,due,kind,type,id){const da=kind?(' data-'+kind+'-id="'+id+'"'+(type?(' data-'+kind+'-type="'+type+'"'):'')):'';return '<div class="mini-item"'+da+'><div class="ck '+(done?'done':'')+' '+(due&&!done?'due':'')+'">'+(done?'✓':'')+'</div><div class="t '+(done?'done':'')+'">'+esc(text)+'</div></div>';}
     let calEditId=null;
     function taskRowHtml(t){
       if(calEditId===t.id){
@@ -1108,6 +1088,22 @@
         else if(act==='del'){S.plan=S.plan.filter(x=>x.id!==id);save();renderCalendar();renderCalDetail(calSel);if(calSel===todayKey())renderPlan();}
         else if(act==='save'){const inp=row.querySelector('.row-edit');const v=inp?inp.value.trim():'';if(v)t.text=v;calEditId=null;save();renderCalendar();renderCalDetail(calSel);if(calSel===todayKey())renderPlan();}
         else if(act==='cancel'){calEditId=null;renderCalDetail(calSel);}
+      }
+      const nce3Item=e.target.closest('.mini-item[data-nce3-id]');
+      if(nce3Item){
+        const id=nce3Item.dataset.nce3Id,type=nce3Item.dataset.nce3Type;
+        const day=S.nce3Days[calSel];if(!day)return;
+        const arr=type==='study'?day.study:day.review;
+        const t=arr.find(x=>x.id===id);
+        if(t){t.done=!t.done;save();renderCalendar();renderCalDetail(calSel);if(calSel===nce3ViewKey)renderNce3();}
+        return;
+      }
+      const lifeItem=e.target.closest('.mini-item[data-life-id]');
+      if(lifeItem){
+        const id=lifeItem.dataset.lifeId;
+        const r=S.life.find(x=>x.id===id);
+        if(r){r.lastDone=(r.lastDone===calSel)?null:calSel;save();renderCalendar();renderCalDetail(calSel);if(S.activeTab==='life')renderLife();}
+        return;
       }
     });
         calDetailEl.addEventListener('keydown',e=>{
