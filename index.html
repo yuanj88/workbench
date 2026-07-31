@@ -205,6 +205,7 @@
     .date-nav .cur{font-size:15px;font-weight:700}
     .sub-hd{font-size:14px;font-weight:700;margin:14px 0 6px;color:var(--green2)}
     .pill-done{display:inline-block;background:var(--greenLight);color:var(--green2);font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px}
+    .nce3-sub{font-size:12px;color:var(--text2);margin:0 0 12px}
     .pill-due{display:inline-block;background:#fde8d8;color:#c46a16;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px}
 
     /* life reminders */
@@ -315,6 +316,18 @@
         <div id="planList"></div>
         <div class="input-row"><input id="planInput" placeholder="添加今日任务…" /><button class="btn-primary" id="planAdd">添加</button></div>
       </div>
+
+      <div class="card">
+        <div class="hd"><span class="title">NCE3 学习计划</span></div>
+        <div class="nce3-sub">艾宾浩斯 11 轮复习</div>
+        <div id="nce3ScheduleBar" style="background:var(--greenLight);border-radius:12px;padding:10px 12px;margin-bottom:12px"></div>
+        <div class="sub-hd">学习内容 <span class="pill-done" id="nce3StudyDone">0/0</span></div>
+        <div id="nce3StudyList"></div>
+        <div class="input-row"><input id="nce3StudyInput" placeholder="今天要学的课文/内容…" /><button class="btn-primary" id="nce3StudyAdd">添加</button></div>
+        <div class="sub-hd">复习任务 <span class="pill-done" id="nce3ReviewDone">0/0</span></div>
+        <div id="nce3ReviewList"></div>
+        <div class="input-row"><input id="nce3ReviewInput" placeholder="今天要复习的内容…" /><button class="btn-primary" id="nce3ReviewAdd">添加</button></div>
+      </div>
     </section>
 
     <!-- 灵感&备忘 -->
@@ -335,24 +348,7 @@
       </div>
     </section>
 
-    <!-- NCE3 每日学习与复习 -->
-    <section id="sec-nce3" class="section">
-      <div class="card">
-        <div class="date-nav">
-          <button id="nce3Prev">‹</button>
-          <span class="cur" id="nce3DateLabel">--</span>
-          <button id="nce3Next">›</button>
-        </div>
-        <div id="nce3ScheduleBar" style="display:none;background:var(--greenLight);border-radius:12px;padding:10px 12px;margin-top:10px"></div>
-        <div class="sub-hd">学习内容 <span class="pill-done" id="nce3StudyDone">0/0</span></div>
-        <div id="nce3StudyList"></div>
-        <div class="input-row"><input id="nce3StudyInput" placeholder="今天要学的课文/内容…" /><button class="btn-primary" id="nce3StudyAdd">添加</button></div>
-        <div class="sub-hd">复习任务 <span class="pill-done" id="nce3ReviewDone">0/0</span></div>
-        <div id="nce3ReviewList"></div>
-        <div class="input-row"><input id="nce3ReviewInput" placeholder="今天要复习的内容…" /><button class="btn-primary" id="nce3ReviewAdd">添加</button></div>
-        <div class="tip">按日期归档：用上方 ‹ › 切换查看任意一天的录入与完成记录（不显示课文原文）。</div>
-      </div>
-    </section>
+    <!-- NCE3 已并入「每日计划」页 -->
 
     <!-- 生活事项提醒 -->
     <section id="sec-life" class="section">
@@ -413,8 +409,8 @@
 
   <script>
     const KEY='creativeWB_v1';
-    const TITLES={plan:'每日计划',nce3:'NCE3每日学习',ideas:'灵感&备忘',life:'生活提醒',calendar:'日历',expiry:'保质期提醒'};
-    const ICONS={plan:'📋',nce3:'📚',ideas:'💡',life:'🔔',calendar:'📅',expiry:'🥬'};
+    const TITLES={plan:'每日计划',ideas:'灵感&备忘',life:'生活提醒',calendar:'日历',expiry:'保质期提醒'};
+    const ICONS={plan:'📋',ideas:'💡',life:'🔔',calendar:'📅',expiry:'🥬'};
     const WEEK=['日','一','二','三','四','五','六'];
     const NCE3_TITLES=[
       '',
@@ -778,7 +774,6 @@
       if(changed)save();
     }
     function renderNce3(){
-      document.getElementById('nce3DateLabel').textContent=fmtCN(nce3ViewKey);
       const info=nce3Info(nce3ViewKey);
       const autoLessons=nce3LessonsForWindow(nce3ViewKey);
       const bar=document.getElementById('nce3ScheduleBar');
@@ -799,8 +794,6 @@
     document.getElementById('nce3ReviewAdd').onclick=()=>{const v=document.getElementById('nce3ReviewInput').value.trim();if(!v)return;ensureNce3Day(nce3ViewKey);S.nce3Days[nce3ViewKey].review.push({id:uid(),text:v,done:false});document.getElementById('nce3ReviewInput').value='';save();renderNce3();};
     document.getElementById('nce3StudyInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('nce3StudyAdd').click();};
     document.getElementById('nce3ReviewInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('nce3ReviewAdd').click();};
-    document.getElementById('nce3Prev').onclick=()=>{nce3ViewKey=keyOf(addDays(parseKey(nce3ViewKey),-1));renderNce3();};
-    document.getElementById('nce3Next').onclick=()=>{nce3ViewKey=keyOf(addDays(parseKey(nce3ViewKey),1));renderNce3();};
     document.getElementById('nce3StudyList').onclick=e=>{
       const cb=e.target.closest('.cb'),del=e.target.closest('.del');
       const day=S.nce3Days[nce3ViewKey];if(!day)return;
@@ -1124,9 +1117,8 @@
     /* render all */
     function render(){
       renderNav();
-      if(S.activeTab==='plan')renderPlan();
+      if(S.activeTab==='plan'){renderPlan();renderNce3();}
       if(S.activeTab==='ideas')renderIdeas();
-      if(S.activeTab==='nce3')renderNce3();
       if(S.activeTab==='life')renderLife();
       if(S.activeTab==='calendar'){renderCalendar();renderCalDetail(calSel);}
       if(S.activeTab==='expiry')renderExpiry();
@@ -1171,7 +1163,7 @@
       S.nce3SchemaVersion=NCE3_SCHEMA_VERSION;
       save();
     }
-    if(S.activeTab==='review'||S.activeTab==='english'||S.activeTab==='memo')S.activeTab='plan';
+    if(S.activeTab==='review'||S.activeTab==='english'||S.activeTab==='memo'||S.activeTab==='nce3')S.activeTab='plan';
     if(!S.life)S.life=[
       {id:uid(),title:'清洗洗衣机',period:'monthly',anchor:'last',lastDone:null},
       {id:uid(),title:'清洗油烟机',period:'monthly',anchor:'last',lastDone:null}
