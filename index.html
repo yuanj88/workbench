@@ -328,6 +328,20 @@
         <div id="nce3ReviewList"></div>
         <div class="input-row"><input id="nce3ReviewInput" placeholder="今天要复习的内容…" /><button class="btn-primary" id="nce3ReviewAdd">添加</button></div>
       </div>
+
+      <!-- 日历（嵌入每日计划页） -->
+      <div class="card">
+        <div class="hd"><span class="title">日历</span></div>
+        <div class="date-nav">
+          <button id="calPrev">‹</button>
+          <span class="cur" id="calMonthLabel">--</span>
+          <button id="calNext">›</button>
+        </div>
+        <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="tip">绿点=当天有已完成任务，橙点=当天有未完成任务或提醒到期。点选日期查看明细。</div>
+      </div>
+      <div id="calDetail"></div>
     </section>
 
     <!-- 灵感&备忘 -->
@@ -370,21 +384,6 @@
       </div>
     </section>
 
-    <!-- 日历 -->
-    <section id="sec-calendar" class="section">
-      <div class="card">
-        <div class="date-nav">
-          <button id="calPrev">‹</button>
-          <span class="cur" id="calMonthLabel">--</span>
-          <button id="calNext">›</button>
-        </div>
-        <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
-        <div class="cal-grid" id="calGrid"></div>
-        <div class="tip">绿点=当天有已完成任务，橙点=当天有未完成任务或提醒到期。点选日期查看明细。</div>
-      </div>
-      <div id="calDetail"></div>
-    </section>
-
     <!-- 内容复盘 -->
 
     <!-- 保质期提醒 -->
@@ -409,8 +408,8 @@
 
   <script>
     const KEY='creativeWB_v1';
-    const TITLES={plan:'每日计划',ideas:'灵感&备忘',life:'生活提醒',calendar:'日历',expiry:'保质期提醒'};
-    const ICONS={plan:'📋',ideas:'💡',life:'🔔',calendar:'📅',expiry:'🥬'};
+    const TITLES={plan:'每日计划',ideas:'灵感&备忘',life:'生活提醒',expiry:'保质期提醒'};
+    const ICONS={plan:'📋',ideas:'💡',life:'🔔',expiry:'🥬'};
     const WEEK=['日','一','二','三','四','五','六'];
     const NCE3_TITLES=[
       '',
@@ -474,7 +473,7 @@
       document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
       document.getElementById('sec-'+k).classList.add('active');
       document.getElementById('pageTitle').textContent=TITLES[k];
-      document.getElementById('fab').style.display=(k==='calendar'||k==='nce3'||k==='life'||k==='expiry')?'none':'flex';
+      document.getElementById('fab').style.display=(k==='life'||k==='expiry')?'none':'flex';
       render();
       save();
     }
@@ -1117,10 +1116,9 @@
     /* render all */
     function render(){
       renderNav();
-      if(S.activeTab==='plan'){renderPlan();renderNce3();}
+      if(S.activeTab==='plan'){renderPlan();renderNce3();renderCalendar();renderCalDetail(calSel);}
       if(S.activeTab==='ideas')renderIdeas();
       if(S.activeTab==='life')renderLife();
-      if(S.activeTab==='calendar'){renderCalendar();renderCalDetail(calSel);}
       if(S.activeTab==='expiry')renderExpiry();
     }
     function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -1163,7 +1161,7 @@
       S.nce3SchemaVersion=NCE3_SCHEMA_VERSION;
       save();
     }
-    if(S.activeTab==='review'||S.activeTab==='english'||S.activeTab==='memo'||S.activeTab==='nce3')S.activeTab='plan';
+    if(S.activeTab==='review'||S.activeTab==='english'||S.activeTab==='memo'||S.activeTab==='nce3'||S.activeTab==='calendar')S.activeTab='plan';
     if(!S.life)S.life=[
       {id:uid(),title:'清洗洗衣机',period:'monthly',anchor:'last',lastDone:null},
       {id:uid(),title:'清洗油烟机',period:'monthly',anchor:'last',lastDone:null}
