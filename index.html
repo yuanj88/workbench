@@ -329,6 +329,13 @@
         <div class="input-row"><input id="nce3ReviewInput" placeholder="今天要复习的内容…" /><button class="btn-primary" id="nce3ReviewAdd">添加</button></div>
       </div>
 
+      <div class="card">
+        <div class="hd"><span class="title">BB 学习计划</span><span class="green-pill" id="bbDone">0/0</span></div>
+        <div class="nce3-sub">培生启明星 1级 · 滚动复习（10-06 → 11-25）</div>
+        <div id="bbList"></div>
+        <div class="input-row"><input id="bbInput" placeholder="添加 BB 学习记录…" /><button class="btn-primary" id="bbAdd">添加</button></div>
+      </div>
+
       <!-- 日历（嵌入每日计划页） -->
       <div class="card">
         <div class="hd"><span class="title">日历</span></div>
@@ -705,50 +712,64 @@
     function fmtCN(k){const d=parseKey(k);return `${d.getMonth()+1}月${d.getDate()}日`;}
 
     /* ---- NCE3 每日学习与复习 ---- */
-    function nce3Info(k){
-      const START=new Date(2026,5,29),ms=86400000;
-      const dd=Math.floor((parseKey(k)-START)/ms);
-      if(dd<0)return null;
-      const w=Math.max(0,Math.min(29,Math.floor(dd/7)));
-      const stage=Math.floor(w/10)+1;
-      const wl=w%10;
-      const l1=w*2+1,l2=w*2+2;
-      const dow=parseKey(k).getDay();
-      const isNew=(dow===1||dow===4);
-      return {weekNo:w+1,stage,l1,l2,title1:NCE3_TITLES[l1]||'第'+l1+'课',title2:NCE3_TITLES[l2]||'第'+l2+'课',isNew,weeksToReview:9-wl};
+    /* 排期：9/28–10/7 暂停；10/8 起恢复。新课每周一、周四开课（各学3天）。
+       暂停前 L1–L26 按原起点 6/29(一)；恢复后从 L27 起，首课 10/8(四)，之后每周一、四各一课。 */
+    const NCE3_START=new Date(2026,5,29);          // 原始起点（周一）
+    const NCE3_RESUME='2026-10-08';                // 恢复日（周四），作为恢复后第一课(L27)开课日
+    const NCE3_RESUME_LESSON=27;                   // 恢复后第一课序号
+    const NCE3_PAUSE_START='2026-09-28', NCE3_PAUSE_END='2026-10-07'; // 暂停空档（不排新课/复习）
+    const NCE3_PAUSE_KEY='2026-09-28', NCE3_SHIFT_DAYS=10;            // 仅用于一次性 schema 迁移，保留不删
+    // 返回第 n 课（1..60）的开课日（周一或周四）
+    function nce3LessonStart(n){
+      if(n<1||n>60)return null;
+      if(n<NCE3_RESUME_LESSON){                    // 暂停前：奇数课周一、偶数课周四
+        const w=Math.floor((n-1)/2);
+        const base=addDays(NCE3_START,w*7);
+        return (n%2===1)?base:addDays(base,3);
+      }
+      const s=n-NCE3_RESUME_LESSON;                // 恢复后第 s 课(0-based)
+      if(s%2===0) return addDays(parseKey(NCE3_RESUME),(s/2)*7);          // 周四
+      return addDays(parseKey(NCE3_RESUME),Math.floor(s/2)*7+4);          // 次周一（周四+4天）
     }
+    function nce3CompletionDate(n){const d=nce3LessonStart(n);return d?addDays(d,2):null;}
     let nce3ViewKey=todayKey();
     function ensureNce3Day(k){if(!S.nce3Days[k])S.nce3Days[k]={study:[],review:[]};}
-    // 返回 k 这天「开课日起连续3天内」应显示的自动新课
-    function nce3LessonsForWindow(k){
-      const START=new Date(2026,5,29);
-      const dd=Math.floor((parseKey(k)-START)/86400000);
-      if(dd<0)return [];
-      const w=Math.floor(dd/7);
-      if(w<0||w>=30)return [];
+    function nce3Info(k){
+      const kd=parseKey(k);
+      let cur=null;
+      for(let n=1;n<=60;n++){const d=nce3LessonStart(n);if(!d)continue;const end=addDays(d,2);if(kd>=d&&kd<=end){cur=n;break;}}
+      if(cur===null)return null;
+      const weekNo=Math.ceil(cur/2),w=weekNo-1,stage=Math.floor(w/10)+1,wl=w%10;
       const l1=w*2+1,l2=w*2+2;
-      const monday=addDays(START,w*7);
-      const thursday=addDays(monday,3);
+      const dow=kd.getDay();
+      const isNew=(dow===1||dow===4);
+      return {weekNo,stage,l1,l2,title1:NCE3_TITLES[l1]||'第'+l1+'课',title2:NCE3_TITLES[l2]||'第'+l2+'课',isNew,weeksToReview:9-wl};
+    }
+    // 返回 k 这天「开课日起连续3天内」应显示的自动新课（暂停空档返回空）
+    function nce3LessonsForWindow(k){
+      if(k>=NCE3_PAUSE_START&&k<=NCE3_PAUSE_END)return [];
       const kd=parseKey(k),out=[];
-      [[monday,l1],[thursday,l2]].forEach(([d,lesson])=>{
-        const end=addDays(d,2);
-        if(kd>=d && kd<=end) out.push({lesson,title:NCE3_TITLES[lesson]||('第'+lesson+'课'),text:`学习 L${lesson} ${NCE3_TITLES[lesson]||''}`.trim()});
-      });
+      for(let n=1;n<=60;n++){
+        const d=nce3LessonStart(n);if(!d)continue;const end=addDays(d,2);
+        if(kd>=d&&kd<=end) out.push({lesson:n,title:NCE3_TITLES[n]||('第'+n+'课'),text:`学习 L${n} ${NCE3_TITLES[n]||''}`.trim()});
+      }
       return out;
     }
     // 返回 k 这天按艾宾浩斯遗忘曲线(11轮)应复习的课文文本列表
-    // 节奏：每课周一/周四开课、学 3 天 → 奇数课周三完成、偶数课周六完成；
-    //   完成后前9次 +1/+2/+4/+7/+15/+30/+60/+90/+120 天，其后每30天一次 → 第10次+150 / 第11次+180 天(共11轮)
+    // 每课开课学 3 天 → 完成日=开课日+2；完成后前9次 +1/+2/+4/+7/+15/+30/+60/+90/+120 天，
+    //   其后每30天一次 → 第10次+150 / 第11次+180 天(共11轮)
     function nce3ReviewTexts(k){
-      const START=new Date(2026,5,29);
       const INTERVALS=[1,2,4,7,15,30,60,90,120,150,180];
       const ORD=['一','二','三','四','五','六','七','八','九','十','十一'];
       const out=[];
       for(let n=1;n<=60;n++){
-        const w=Math.floor((n-1)/2);
-        const comp=addDays(START, w*7 + (n%2===1?2:5)); // 完成日：奇数课周三(+2)、偶数课周六(+5)
+        const comp=nce3CompletionDate(n);if(!comp)continue;
         for(let i=0;i<INTERVALS.length;i++){
-          if(keyOf(addDays(comp,INTERVALS[i]))===k){
+          let rd=addDays(comp,INTERVALS[i]);
+          // 暂停前已开课(L1–L26)的复习：9/28 及之后到期的整体后移 10 天，与新课平移一致（空档 9/28–10/7 不显示，10/8 起恢复）
+          // 恢复后新课(L27+)的复习由 nce3CompletionDate 自然落在 10/8 之后，不再偏移
+          if(n<NCE3_RESUME_LESSON && keyOf(rd)>='2026-09-28') rd=addDays(rd,10);
+          if(keyOf(rd)===k){
             const title=NCE3_TITLES[n]||('第'+n+'课');
             out.push(`复习 第${n}课 ${title}（第${ORD[i]}次·${INTERVALS[i]}天）`.trim());
           }
@@ -804,6 +825,88 @@
       const day=S.nce3Days[nce3ViewKey];if(!day)return;
       if(cb){const t=day.review.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderNce3();}}
       if(del){day.review=day.review.filter(x=>x.id!==del.dataset.id);save();renderNce3();}
+    };
+
+    /* ---- BB 学习计划（培生启明星 1级 · 滚动复习）---- */
+    const BB_SCHEDULE={
+      '2026-10-06':[['new','新 1'],['new','新 2']],
+      '2026-10-07':[['old','复 1'],['old','复 2'],['new','新 3']],
+      '2026-10-08':[['old','复 3'],['new','新 4']],
+      '2026-10-09':[['old','复 4'],['new','新 5']],
+      '2026-10-10':[['old','复 5'],['new','新 6']],
+      '2026-10-11':[['rest','复习①（自选 2 册 + 补 1 册）']],
+      '2026-10-12':[['old','复 6'],['new','新 7']],
+      '2026-10-13':[['old','复 7'],['new','新 8']],
+      '2026-10-14':[['old','复 8'],['new','新 9']],
+      '2026-10-15':[['old','复 9'],['new','新 10']],
+      '2026-10-16':[['old','复 10'],['new','新 11']],
+      '2026-10-17':[['old','复 11'],['new','新 12']],
+      '2026-10-18':[['rest','复习②（自选 2 册 + 补 1 册）']],
+      '2026-10-19':[['old','复 12'],['new','新 13']],
+      '2026-10-20':[['old','复 13'],['new','新 14']],
+      '2026-10-21':[['old','复 14'],['new','新 15']],
+      '2026-10-22':[['old','复 15'],['new','新 16']],
+      '2026-10-23':[['old','复 16'],['new','新 17']],
+      '2026-10-24':[['old','复 17'],['new','新 18']],
+      '2026-10-25':[['rest','复习③（自选 2 册 + 补 1 册）']],
+      '2026-10-26':[['old','复 18'],['new','新 19']],
+      '2026-10-27':[['old','复 19'],['new','新 20']],
+      '2026-10-28':[['old','复 20'],['new','新 21']],
+      '2026-10-29':[['old','复 21'],['new','新 22']],
+      '2026-10-30':[['old','复 22'],['new','新 23']],
+      '2026-10-31':[['old','复 23'],['new','新 24']],
+      '2026-11-01':[['rest','复习④（自选 2 册 + 补 1 册）']],
+      '2026-11-02':[['old','复 24'],['new','新 25']],
+      '2026-11-03':[['old','复 25'],['new','新 26']],
+      '2026-11-04':[['old','复 26'],['new','新 27']],
+      '2026-11-05':[['old','复 27'],['new','新 28']],
+      '2026-11-06':[['old','复 28'],['new','新 29']],
+      '2026-11-07':[['old','复 29'],['new','新 30']],
+      '2026-11-08':[['rest','复习⑤（自选 2 册 + 补 1 册）']],
+      '2026-11-09':[['old','复 30'],['new','新 31']],
+      '2026-11-10':[['old','复 31'],['new','新 32']],
+      '2026-11-11':[['old','复 32'],['new','新 33']],
+      '2026-11-12':[['old','复 33'],['new','新 34']],
+      '2026-11-13':[['old','复 34'],['new','新 35']],
+      '2026-11-14':[['old','复 35'],['new','新 36']],
+      '2026-11-15':[['rest','复习⑥（自选 2 册 + 补 1 册）']],
+      '2026-11-16':[['old','复 36'],['new','新 37']],
+      '2026-11-17':[['old','复 37'],['new','新 38']],
+      '2026-11-18':[['old','复 38'],['new','新 39']],
+      '2026-11-19':[['old','复 39'],['new','新 40']],
+      '2026-11-20':[['old','复 40'],['new','新 41']],
+      '2026-11-21':[['old','复 41'],['new','新 42']],
+      '2026-11-22':[['rest','复习⑦（自选 2 册 + 补 1 册）']],
+      '2026-11-23':[['old','复 42'],['new','新 43']],
+      '2026-11-24':[['old','复 43'],['new','新 44']],
+      '2026-11-25':[['old','复 44（第一轮完成）']]
+    };
+    function ensureBbDay(k){if(!S.bbDays[k])S.bbDays[k]={sched:{},manual:[]};}
+    function bbItemsForDate(k){
+      const arr=BB_SCHEDULE[k]||[];
+      return arr.map((it,i)=>({id:k+'#'+i,type:it[0],text:it[1]}));
+    }
+    function renderBB(){
+      const k=todayKey();
+      ensureBbDay(k);
+      const day=S.bbDays[k];
+      const sched=bbItemsForDate(k).map(it=>({...it,done:!!day.sched[it.id]}));
+      const manual=day.manual.map(m=>({...m,type:'manual'}));
+      const all=sched.concat(manual);
+      const el=document.getElementById('bbList');
+      el.innerHTML=all.length?all.map(t=>`<div class="task-item"><div class="cb ${t.done?'done':''}" data-type="bb" data-kind="${t.type}" data-id="${t.id}">${t.done?'✓':''}</div><div class="txt ${t.done?'done':''}">${esc(t.text)}</div>${t.type==='manual'?'<span class="del" data-type="bb" data-id="'+t.id+'">删除</span>':''}</div>`).join(''):'<div class="tip">今天没有 BB 学习内容</div>';
+      document.getElementById('bbDone').textContent=`${all.filter(x=>x.done).length}/${all.length}`;
+    }
+    document.getElementById('bbAdd').onclick=()=>{const v=document.getElementById('bbInput').value.trim();if(!v)return;const k=todayKey();ensureBbDay(k);S.bbDays[k].manual.push({id:uid(),text:v,done:false});document.getElementById('bbInput').value='';save();renderBB();};
+    document.getElementById('bbInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('bbAdd').click();};
+    document.getElementById('bbList').onclick=e=>{
+      const cb=e.target.closest('.cb'),del=e.target.closest('.del');
+      const k=todayKey();ensureBbDay(k);const day=S.bbDays[k];
+      if(cb){const id=cb.dataset.id,kind=cb.dataset.kind;
+        if(kind==='manual'){const m=day.manual.find(x=>x.id===id);if(m)m.done=!m.done;}
+        else day.sched[id]=!day.sched[id];
+        save();renderBB();return;}
+      if(del){const id=del.dataset.id;day.manual=day.manual.filter(x=>x.id!==id);save();renderBB();}
     };
 
     /* ---- 生活事项提醒 ---- */
@@ -994,6 +1097,11 @@
       const isNce3Routine=t=>t.auto||/^(学习 L\d+|复习 第\d+课)/.test(t.text);
       if(nd){nd.study.concat(nd.review).forEach(t=>{if(t.done)done=true;else if(!isNce3Routine(t))plan=true;});}
       S.life.forEach(r=>{if(r.lastDone===k){done=true;}else{const due=lifeDueDate(r,k);if(due===k){const {start,end}=periodRange(r,k);const doneThisCycle=r.lastDone&&r.lastDone>=start&&r.lastDone<=end;if(!doneThisCycle)plan=true;}}});
+      const bd=S.bbDays[k];
+      if(bd){
+        const bs=bbItemsForDate(k);
+        if(bs.some(it=>bd.sched[it.id])||bd.manual.some(m=>m.done))done=true;
+      }
       return {done,plan,sched};
     }
     function renderCalendar(){
@@ -1031,6 +1139,14 @@
       const nd=S.nce3Days[k];
       if(nd.study.length){nd.study.filter(t=>!t.missed).forEach(t=>{nce3Html+=miniItem(t.text,t.done,false,'nce3','study',t.id);});}
       if(nd.review.length){nd.review.filter(t=>!t.missed).forEach(t=>{nce3Html+=miniItem(t.text,t.done,false,'nce3','review',t.id);});}
+      let bbHtml='';
+      const bItems=bbItemsForDate(k);
+      const bDay=S.bbDays[k]||{sched:{},manual:[]};
+      if(bItems.length||bDay.manual.length){
+        bItems.forEach(it=>{bbHtml+=miniItem(it.text,!!bDay.sched[it.id],false,'bb',it.type,it.id);});
+        bDay.manual.forEach(m=>{bbHtml+=miniItem(m.text,m.done,false,'bb','manual',m.id);});
+      }
+
       // 生活提醒：到期日打点且日历内可勾选（含历史日期），与提醒页面对应
       S.life.forEach(r=>{
         const due=lifeDueDate(r,k);
@@ -1049,6 +1165,7 @@
       if(doneHtml)html+='<div class="day-group"><div class="gh">已完成</div>'+doneHtml+'</div>';
       if(nce3Html)html+='<div class="day-group"><div class="gh">NCE3 学习安排</div>'+nce3Html+'</div>';
       if(futureLife)html+='<div class="day-group"><div class="gh">生活提醒到期日</div>'+futureLife+'</div>';
+      if(bbHtml)html+='<div class="day-group"><div class="gh">BB 学习计划</div>'+bbHtml+'</div>';
       html+='<div class="day-group"><div class="gh">添加这一天计划</div><div style="display:flex;gap:8px;margin-top:6px"><input id="calPlanInput" class="row-edit" style="flex:1" placeholder="输入计划..." /><button id="calPlanAdd" class="btn-primary sm">添加</button></div></div>';
       html+='</div>';
       calDetailEl.innerHTML=html;
@@ -1097,6 +1214,16 @@
         if(r){r.lastDone=(r.lastDone===calSel)?null:calSel;save();renderCalendar();renderCalDetail(calSel);if(S.activeTab==='life')renderLife();}
         return;
       }
+      const bbItem=e.target.closest('.mini-item[data-bb-id]');
+      if(bbItem){
+        const id=bbItem.dataset.bbId,type=bbItem.dataset.bbType;
+        ensureBbDay(calSel);
+        const day=S.bbDays[calSel];
+        if(type==='manual'){const m=day.manual.find(x=>x.id===id);if(m){m.done=!m.done;}}
+        else{day.sched[id]=!day.sched[id];}
+        save();renderCalendar();renderCalDetail(calSel);if(calSel===todayKey())renderBB();
+        return;
+      }
     });
         calDetailEl.addEventListener('keydown',e=>{
       if(e.key==='Enter'){
@@ -1116,7 +1243,7 @@
     /* render all */
     function render(){
       renderNav();
-      if(S.activeTab==='plan'){renderPlan();renderNce3();renderCalendar();renderCalDetail(calSel);}
+      if(S.activeTab==='plan'){renderPlan();renderNce3();renderBB();renderCalendar();renderCalDetail(calSel);}
       if(S.activeTab==='ideas')renderIdeas();
       if(S.activeTab==='life')renderLife();
       if(S.activeTab==='expiry')renderExpiry();
@@ -1155,9 +1282,20 @@
     })();
 
     if(!S.nce3Days)S.nce3Days={};
-    const NCE3_SCHEMA_VERSION=2;
+    if(!S.bbDays)S.bbDays={};
+    const NCE3_SCHEMA_VERSION=3;
     if(S.nce3SchemaVersion!==NCE3_SCHEMA_VERSION){
-      S.nce3Days={};
+      /* schema v2→v3: 9/28 及之后的 nce3Days 数据 key 后移 10 天 */
+      if(S.nce3SchemaVersion===2 && NCE3_SHIFT_DAYS>0){
+        const migrated={};
+        for(const k in S.nce3Days){
+          const dest= k>=NCE3_PAUSE_KEY ? keyOf(addDays(parseKey(k),NCE3_SHIFT_DAYS)) : k;
+          migrated[dest]=S.nce3Days[k];
+        }
+        S.nce3Days=migrated;
+      }else{
+        S.nce3Days={};
+      }
       S.nce3SchemaVersion=NCE3_SCHEMA_VERSION;
       save();
     }
