@@ -186,6 +186,8 @@
 
     .fab{position:fixed;right:16px;bottom:calc(20px + var(--safe-bottom));width:52px;height:52px;border-radius:50%;background:var(--green);color:#fff;border:none;font-size:28px;box-shadow:0 4px 14px rgba(90,143,76,.4);z-index:35;display:flex;align-items:center;justify-content:center}
     .fab:active{transform:scale(.95)}
+    /* 为右下角悬浮按钮预留空间，避免遮挡页面底部操作（如日历内「添加这一天计划」、灵感页「保存」） */
+    #sec-plan,#sec-ideas{padding-bottom:72px}
 
     /* modal */
     .modal{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.35)}
@@ -528,7 +530,7 @@
     }
     document.getElementById('planList').onclick=e=>{
       const cb=e.target.closest('.cb');const del=e.target.closest('.del');
-      if(cb){const t=S.plan.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderPlan();}}
+      if(cb){const t=S.plan.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderPlan();syncCalAfterChange();}}
       if(del){
         const t=S.plan.find(x=>x.id===del.dataset.id);
         if(t&&t.fixed&&t.date===todayKey()){
@@ -536,10 +538,10 @@
           S.fixedSkip[t.date]=S.fixedSkip[t.date]||[];
           if(!S.fixedSkip[t.date].includes(t.text))S.fixedSkip[t.date].push(t.text);
         }
-        S.plan=S.plan.filter(x=>x.id!==del.dataset.id);save();renderPlan();
+        S.plan=S.plan.filter(x=>x.id!==del.dataset.id);save();renderPlan();syncCalAfterChange();
       }
     };
-    function addPlan(){const v=document.getElementById('planInput').value.trim();if(!v)return;S.plan.push({id:uid(),text:v,done:false,date:todayKey()});document.getElementById('planInput').value='';save();renderPlan();}
+    function addPlan(){const v=document.getElementById('planInput').value.trim();if(!v)return;S.plan.push({id:uid(),text:v,done:false,date:todayKey()});document.getElementById('planInput').value='';save();renderPlan();syncCalAfterChange();}
     document.getElementById('planAdd').onclick=addPlan;
     document.getElementById('planInput').onkeydown=e=>{if(e.key==='Enter')addPlan()};
 
@@ -810,21 +812,21 @@
       document.getElementById('nce3StudyDone').textContent=`${sd.filter(x=>x.done).length}/${sd.length}`;
       document.getElementById('nce3ReviewDone').textContent=`${rd.filter(x=>x.done).length}/${rd.length}`;
     }
-    document.getElementById('nce3StudyAdd').onclick=()=>{const v=document.getElementById('nce3StudyInput').value.trim();if(!v)return;ensureNce3Day(nce3ViewKey);S.nce3Days[nce3ViewKey].study.push({id:uid(),text:v,done:false});document.getElementById('nce3StudyInput').value='';save();renderNce3();};
-    document.getElementById('nce3ReviewAdd').onclick=()=>{const v=document.getElementById('nce3ReviewInput').value.trim();if(!v)return;ensureNce3Day(nce3ViewKey);S.nce3Days[nce3ViewKey].review.push({id:uid(),text:v,done:false});document.getElementById('nce3ReviewInput').value='';save();renderNce3();};
+    document.getElementById('nce3StudyAdd').onclick=()=>{const v=document.getElementById('nce3StudyInput').value.trim();if(!v)return;ensureNce3Day(nce3ViewKey);S.nce3Days[nce3ViewKey].study.push({id:uid(),text:v,done:false});document.getElementById('nce3StudyInput').value='';save();renderNce3();syncCalAfterChange();};
+    document.getElementById('nce3ReviewAdd').onclick=()=>{const v=document.getElementById('nce3ReviewInput').value.trim();if(!v)return;ensureNce3Day(nce3ViewKey);S.nce3Days[nce3ViewKey].review.push({id:uid(),text:v,done:false});document.getElementById('nce3ReviewInput').value='';save();renderNce3();syncCalAfterChange();};
     document.getElementById('nce3StudyInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('nce3StudyAdd').click();};
     document.getElementById('nce3ReviewInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('nce3ReviewAdd').click();};
     document.getElementById('nce3StudyList').onclick=e=>{
       const cb=e.target.closest('.cb'),del=e.target.closest('.del');
       const day=S.nce3Days[nce3ViewKey];if(!day)return;
-      if(cb){const t=day.study.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderNce3();}}
-      if(del){day.study=day.study.filter(x=>x.id!==del.dataset.id);save();renderNce3();}
+      if(cb){const t=day.study.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderNce3();syncCalAfterChange();}}
+      if(del){day.study=day.study.filter(x=>x.id!==del.dataset.id);save();renderNce3();syncCalAfterChange();}
     };
     document.getElementById('nce3ReviewList').onclick=e=>{
       const cb=e.target.closest('.cb'),del=e.target.closest('.del');
       const day=S.nce3Days[nce3ViewKey];if(!day)return;
-      if(cb){const t=day.review.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderNce3();}}
-      if(del){day.review=day.review.filter(x=>x.id!==del.dataset.id);save();renderNce3();}
+      if(cb){const t=day.review.find(x=>x.id===cb.dataset.id);if(t){t.done=!t.done;save();renderNce3();syncCalAfterChange();}}
+      if(del){day.review=day.review.filter(x=>x.id!==del.dataset.id);save();renderNce3();syncCalAfterChange();}
     };
 
     /* ---- BB 学习计划（培生启明星 1级 · 滚动复习）---- */
@@ -897,7 +899,7 @@
       el.innerHTML=all.length?all.map(t=>`<div class="task-item"><div class="cb ${t.done?'done':''}" data-type="bb" data-kind="${t.type}" data-id="${t.id}">${t.done?'✓':''}</div><div class="txt ${t.done?'done':''}">${esc(t.text)}</div>${t.type==='manual'?'<span class="del" data-type="bb" data-id="'+t.id+'">删除</span>':''}</div>`).join(''):'<div class="tip">今天没有 BB 学习内容</div>';
       document.getElementById('bbDone').textContent=`${all.filter(x=>x.done).length}/${all.length}`;
     }
-    document.getElementById('bbAdd').onclick=()=>{const v=document.getElementById('bbInput').value.trim();if(!v)return;const k=todayKey();ensureBbDay(k);S.bbDays[k].manual.push({id:uid(),text:v,done:false});document.getElementById('bbInput').value='';save();renderBB();};
+    document.getElementById('bbAdd').onclick=()=>{const v=document.getElementById('bbInput').value.trim();if(!v)return;const k=todayKey();ensureBbDay(k);S.bbDays[k].manual.push({id:uid(),text:v,done:false});document.getElementById('bbInput').value='';save();renderBB();syncCalAfterChange();};
     document.getElementById('bbInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('bbAdd').click();};
     document.getElementById('bbList').onclick=e=>{
       const cb=e.target.closest('.cb'),del=e.target.closest('.del');
@@ -905,8 +907,8 @@
       if(cb){const id=cb.dataset.id,kind=cb.dataset.kind;
         if(kind==='manual'){const m=day.manual.find(x=>x.id===id);if(m)m.done=!m.done;}
         else day.sched[id]=!day.sched[id];
-        save();renderBB();return;}
-      if(del){const id=del.dataset.id;day.manual=day.manual.filter(x=>x.id!==id);save();renderBB();}
+        save();renderBB();syncCalAfterChange();return;}
+      if(del){const id=del.dataset.id;day.manual=day.manual.filter(x=>x.id!==id);save();renderBB();syncCalAfterChange();}
     };
 
     /* ---- 生活事项提醒 ---- */
@@ -1170,6 +1172,8 @@
       html+='</div>';
       calDetailEl.innerHTML=html;
     }
+    // 上方任务（待办/NCE3/BB）勾选或增删后，同步刷新日历与选中日明细
+    function syncCalAfterChange(){renderCalendar();renderCalDetail(calSel);}
     function miniItem(text,done,due,kind,type,id){const da=kind?(' data-'+kind+'-id="'+id+'"'+(type?(' data-'+kind+'-type="'+type+'"'):'')):'';return '<div class="mini-item"'+da+'><div class="ck '+(done?'done':'')+' '+(due&&!done?'due':'')+'">'+(done?'✓':'')+'</div><div class="t '+(done?'done':'')+'">'+esc(text)+'</div></div>';}
     let calEditId=null;
     function taskRowHtml(t){
